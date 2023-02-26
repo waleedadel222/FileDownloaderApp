@@ -32,14 +32,6 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-
-        registerReceiver(receiver, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
-
-        createChannel(
-            getString(R.string.notification_channel_id),
-            getString(R.string.notification_title)
-        )
-
         binding.includeMain.loadingButton.buttonState = ButtonState.Clicked
 
         binding.includeMain.loadingButton.setOnClickListener {
@@ -47,20 +39,15 @@ class MainActivity : AppCompatActivity() {
             when (binding.radioGroup.checkedRadioButtonId) {
                 R.id.glide_radio_button -> {
                     downloadedFileName = getString(R.string.glide_label_button)
-
-                    binding.includeMain.loadingButton.buttonState = ButtonState.Loading
                     downloadFile(GLIDE_URL)
                 }
                 R.id.udacity_radio_button -> {
                     downloadedFileName = getString(R.string.udacity_label_button)
 
-                    binding.includeMain.loadingButton.buttonState = ButtonState.Loading
                     downloadFile(UDACITY_URL)
                 }
                 R.id.retrofit_radio_button -> {
                     downloadedFileName = getString(R.string.retrofit_label_button)
-
-                    binding.includeMain.loadingButton.buttonState = ButtonState.Loading
                     downloadFile(RETROFIT_URL)
                 }
                 else -> {
@@ -79,15 +66,24 @@ class MainActivity : AppCompatActivity() {
         }
 
 
+    }
 
+    override fun onResume() {
+        super.onResume()
+        registerReceiver(receiver, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
+    }
+
+    override fun onPause() {
+        super.onPause()
+        unregisterReceiver(receiver)
     }
 
     private val receiver = object : BroadcastReceiver() {
+
         @RequiresApi(Build.VERSION_CODES.S)
         @SuppressLint("Range")
         override fun onReceive(context: Context?, intent: Intent?) {
             val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
-
 
             binding.includeMain.loadingButton.buttonState = ButtonState.Completed
 
@@ -100,30 +96,37 @@ class MainActivity : AppCompatActivity() {
             if (cursor.moveToFirst()) {
                 val status = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS))
 
-                var downloadStatus = "Fail"
-
                 if (DownloadManager.STATUS_SUCCESSFUL == status) {
+                    sendNotification(getString(R.string.notification_description), "SUCCESS")
 
-                    downloadStatus = "Success"
+                } else {
+                    sendNotification("Download is failed", "FAILED")
+
                 }
 
-                val toast = Toast.makeText(
-                    applicationContext,
-                    getString(R.string.notification_description),
-                    Toast.LENGTH_LONG
-                )
-                toast.show()
 
-                val notificationManager = getSystemService(NotificationManager::class.java)
-                notificationManager.sendNotification(
-                    getString(R.string.notification_description),
-                    applicationContext,
-                    downloadedFileName,
-                    downloadStatus,
-                    getString(R.string.notification_channel_id)
-                )
             }
         }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.S)
+    private fun sendNotification(toastText: String, downloadStatus: String) {
+
+        val toast = Toast.makeText(
+            applicationContext,
+            toastText,
+            Toast.LENGTH_LONG
+        )
+        toast.show()
+
+        val notificationManager = getSystemService(NotificationManager::class.java)
+        notificationManager.sendNotification(
+            getString(R.string.notification_description),
+            applicationContext,
+            downloadedFileName,
+            downloadStatus,
+            getString(R.string.notification_channel_id)
+        )
     }
 
     private fun createChannel(channelId: String, channelName: String) {
@@ -145,6 +148,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun downloadFile(downloadUrl: String) {
+
+        binding.includeMain.loadingButton.buttonState = ButtonState.Loading
+
+        createChannel(
+            getString(R.string.notification_channel_id),
+            getString(R.string.notification_title)
+        )
+
+
         val request =
             DownloadManager.Request(Uri.parse(downloadUrl))
                 .setTitle(getString(R.string.app_name))
@@ -156,6 +168,8 @@ class MainActivity : AppCompatActivity() {
         val downloadManager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
         downloadID =
             downloadManager.enqueue(request)
+
+
     }
 
 

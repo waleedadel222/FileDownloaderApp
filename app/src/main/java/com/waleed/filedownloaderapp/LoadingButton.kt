@@ -55,7 +55,7 @@ class LoadingButton @JvmOverloads constructor(
 
     private val loadingPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
-        color = ContextCompat.getColor(context, R.color.purple_500)
+        color = ContextCompat.getColor(context, R.color.teal_700)
     }
 
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
